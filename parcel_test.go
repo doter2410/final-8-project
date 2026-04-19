@@ -100,16 +100,31 @@ func TestSetAddress(t *testing.T) {
 // TestSetStatus проверяет обновление статуса
 func TestSetStatus(t *testing.T) {
 	// prepare
-	db, err := // настройте подключение к БД
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "cannot connect with bd")
+	defer db.Close() // настройте подключение к БД
+
+	store := NewParcelStore(db)
+	parcel := getTestParcel()
 
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	parcel.Number, err = store.Add(parcel)
+	require.NoError(t, err, "cannot add parcel to table")
+	require.NotEmpty(t, parcel.Number, "number is empty")
 
 	// set status
 	// обновите статус, убедитесь в отсутствии ошибки
+	err = store.SetStatus(parcel.Number, ParcelStatusSent)
+	require.NoError(t, err, "cannot set new status")
 
 	// check
 	// получите добавленную посылку и убедитесь, что статус обновился
+	var checkParcel Parcel
+	checkParcel, err = store.Get(parcel.Number)
+	require.NoError(t, err, "cannot get parcel")
+
+	assert.Equal(t, ParcelStatusSent, checkParcel.Status, "not equal status with sent")
 }
 
 // TestGetByClient проверяет получение посылок по идентификатору клиента
