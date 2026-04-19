@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"modernc.org/libc/termios"
 )
 
 var (
@@ -57,7 +56,7 @@ func TestAddGetDelete(t *testing.T) {
 	assert.Equal(t, parcel.Status, checkParcel.Status, "not equal status")
 	assert.Equal(t, parcel.Address, checkParcel.Address, "not equal address")
 	assert.Equal(t, parcel.CreatedAt, checkParcel.CreatedAt, "not equal created_at")
-	
+
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что посылку больше нельзя получить из БД
@@ -130,7 +129,11 @@ func TestSetStatus(t *testing.T) {
 // TestGetByClient проверяет получение посылок по идентификатору клиента
 func TestGetByClient(t *testing.T) {
 	// prepare
-	db, err := // настройте подключение к БД
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "cannot connect with bd")
+	defer db.Close() // настройте подключение к БД
+
+	store := NewParcelStore(db)
 
 	parcels := []Parcel{
 		getTestParcel(),
@@ -147,7 +150,9 @@ func TestGetByClient(t *testing.T) {
 
 	// add
 	for i := 0; i < len(parcels); i++ {
-		id, err := // добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+		id, err := store.Add(parcels[i])
+		require.NoError(t, err, "cannot add parcel to table")
+		require.NotEmpty(t, id, "id is empty") // добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
 
 		// обновляем идентификатор добавленной у посылки
 		parcels[i].Number = id
@@ -157,14 +162,23 @@ func TestGetByClient(t *testing.T) {
 	}
 
 	// get by client
-	storedParcels, err := // получите список посылок по идентификатору клиента, сохранённого в переменной client
+	storedParcels, err := store.GetByClient(client) // получите список посылок по идентификатору клиента, сохранённого в переменной client
 	// убедитесь в отсутствии ошибки
 	// убедитесь, что количество полученных посылок совпадает с количеством добавленных
+	require.NoError(t, err, "cannot get parcels by client")
+	assert.Equal(t, len(parcels), len(storedParcels), "not equal count parcels")
 
 	// check
 	for _, parcel := range storedParcels {
 		// в parcelMap лежат добавленные посылки, ключ - идентификатор посылки, значение - сама посылка
 		// убедитесь, что все посылки из storedParcels есть в parcelMap
+		checkParcel, ok := parcelMap[parcel.Number]
+		assert.True(t, ok, "parcel is not in parcelMap")
 		// убедитесь, что значения полей полученных посылок заполнены верно
+
+		assert.Equal(t, checkParcel.Client, parcel.Client, "is not equal client")
+		assert.Equal(t, checkParcel.Address, parcel.Address, "is not equal address")
+		assert.Equal(t, checkParcel.Status, parcel.Status, "is not equal status")
+		assert.Equal(t, checkParcel.CreatedAt, parcel.CreatedAt, "is not equal created_at")
 	}
 }
