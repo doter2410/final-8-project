@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,20 +32,39 @@ func getTestParcel() Parcel {
 // TestAddGetDelete проверяет добавление, получение и удаление посылки
 func TestAddGetDelete(t *testing.T) {
 	// prepare
-	db, err := // настройте подключение к БД
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "cannot connect with bd")
+	defer db.Close()
+
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	parcel.Number, err = store.Add(parcel)
+	require.NoError(t, err, "cannot add parcel to table")
+	require.NotEmpty(t, parcel.Number, "number is empty")
 
 	// get
 	// получите только что добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что значения всех полей в полученном объекте совпадают со значениями полей в переменной parcel
+	var checkParcel Parcel
+	checkParcel, err = store.Get(parcel.Number)
+	require.NoError(t, err, "cannot get parcel")
 
+	assert.Equal(t, parcel.Client, checkParcel.Client, "not equal client")
+	assert.Equal(t, parcel.Status, checkParcel.Status, "not equal status")
+	assert.Equal(t, parcel.Address, checkParcel.Address, "not equal address")
+	assert.Equal(t, parcel.CreatedAt, checkParcel.CreatedAt, "not equal created_at")
+	
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
 	// проверьте, что посылку больше нельзя получить из БД
+	err = store.Delete(parcel.Number)
+	require.NoError(t, err, "cannot exec command delete")
+
+	_, err = store.Get(parcel.Number)
+	require.ErrorIs(t, err, sql.ErrNoRows, "delete client is not success")
 }
 
 // TestSetAddress проверяет обновление адреса
