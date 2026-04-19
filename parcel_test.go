@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"modernc.org/libc/termios"
 )
 
 var (
@@ -70,17 +71,30 @@ func TestAddGetDelete(t *testing.T) {
 // TestSetAddress проверяет обновление адреса
 func TestSetAddress(t *testing.T) {
 	// prepare
-	db, err := // настройте подключение к БД
+	db, err := sql.Open("sqlite", "tracker.db")
+	require.NoError(t, err, "cannot connect with bd")
+	defer db.Close() // настройте подключение к БД
 
+	store := NewParcelStore(db)
+	parcel := getTestParcel()
 	// add
 	// добавьте новую посылку в БД, убедитесь в отсутствии ошибки и наличии идентификатора
+	parcel.Number, err = store.Add(parcel)
+	require.NoError(t, err, "cannot add parcel to table")
+	require.NotEmpty(t, parcel.Number, "number is empty")
 
 	// set address
 	// обновите адрес, убедитесь в отсутствии ошибки
 	newAddress := "new test address"
-
+	err = store.SetAddress(parcel.Number, newAddress)
+	require.NoError(t, err, "cannot set new address")
 	// check
 	// получите добавленную посылку и убедитесь, что адрес обновился
+	var checkParcel Parcel
+	checkParcel, err = store.Get(parcel.Number)
+	require.NoError(t, err, "cannot get parcel")
+
+	assert.Equal(t, newAddress, checkParcel.Address, "not equal address with newAddress")
 }
 
 // TestSetStatus проверяет обновление статуса
