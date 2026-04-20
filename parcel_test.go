@@ -52,10 +52,7 @@ func TestAddGetDelete(t *testing.T) {
 	checkParcel, err = store.Get(parcel.Number)
 	require.NoError(t, err, "cannot get parcel")
 
-	assert.Equal(t, parcel.Client, checkParcel.Client, "not equal client")
-	assert.Equal(t, parcel.Status, checkParcel.Status, "not equal status")
-	assert.Equal(t, parcel.Address, checkParcel.Address, "not equal address")
-	assert.Equal(t, parcel.CreatedAt, checkParcel.CreatedAt, "not equal created_at")
+	assert.Equal(t, parcel, checkParcel, "structs are not equal")
 
 	// delete
 	// удалите добавленную посылку, убедитесь в отсутствии ошибки
@@ -176,9 +173,7 @@ func TestGetByClient(t *testing.T) {
 		assert.True(t, ok, "parcel is not in parcelMap")
 		// убедитесь, что значения полей полученных посылок заполнены верно
 
-		assert.Equal(t, checkParcel.Client, parcel.Client, "is not equal client")
-		assert.Equal(t, checkParcel.Address, parcel.Address, "is not equal address")
-		assert.Equal(t, checkParcel.Status, parcel.Status, "is not equal status")
-		assert.Equal(t, checkParcel.CreatedAt, parcel.CreatedAt, "is not equal created_at")
+		assert.Equal(t, checkParcel, parcel, "structs are not equal")
+
 	}
 }
